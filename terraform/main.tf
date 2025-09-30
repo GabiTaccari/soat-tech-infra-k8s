@@ -8,19 +8,9 @@ terraform {
   }
 }
 
-# Provider Kubernetes usando kubeconfig inline (virá de secret do Actions)
+# Usa o kubeconfig padrão (~/.kube/config) — será criado no workflow
 provider "kubernetes" {
-  host                   = null
-  config_path            = null
-  config_paths           = null
-  config_context_cluster = null
-
-  experiments {
-    manifest_resource = true
-  }
-
-  # kubeconfig cru (YAML) injetado via TF_VAR_kubeconfig no workflow
-  config_raw = var.kubeconfig
+  config_path = pathexpand("~/.kube/config")
 }
 
 #############################
@@ -53,7 +43,7 @@ resource "kubernetes_deployment_v1" "app" {
       }
 
       spec {
-        # Puxe imagem privada do GHCR (secret criado no cluster)
+        # Secret para puxar imagem privada do GHCR
         image_pull_secrets {
           name = "ghcr-secret"
         }
