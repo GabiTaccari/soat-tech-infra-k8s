@@ -65,7 +65,7 @@ resource "kubernetes_deployment_v1" "app" {
           }
 
           env {
-            name = "DATABASE_URL"
+            name  = "DATABASE_URL"
             value = "postgresql://soat:soat123@postgres-service:5432/pedidos?schema=public"
           }
 
