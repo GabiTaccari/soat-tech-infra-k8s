@@ -1,0 +1,63 @@
+name: Terraform K8s
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    env:
+      TF_IN_AUTOMATION: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.5
+
+      - name: Terraform fmt
+        working-directory: terraform
+        run: terraform fmt -check -diff
+
+      - name: Terraform init
+        working-directory: terraform
+        run: terraform init -input=false
+
+      - name: Terraform validate
+        working-directory: terraform
+        run: terraform validate
+
+      - name: Terraform plan
+        if: github.event_name != 'push'
+        working-directory: terraform
+        env:
+          TF_VAR_kubeconfig: ${{ secrets.KUBE_CONFIG }}
+          TF_VAR_image: ${{ vars.APP_IMAGE }}
+        run: terraform plan -input=false -out=tfplan
+
+      - name: Upload plan (PR)
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: terraform/tfplan
+
+      # Apply somente na main
+      - name: Terraform apply (main)
+        if: github.event_name == 'push'
+        working-directory: terraform
+        env:
+          TF_VAR_kubeconfig: ${{ secrets.KUBE_CONFIG }}
+          TF_VAR_image: ${{ vars.APP_IMAGE }}
+        run: terraform apply -input=false -auto-approve
