@@ -13,7 +13,6 @@ permissions:
 jobs:
   terraform:
     runs-on: ubuntu-latest
-
     env:
       TF_IN_AUTOMATION: true
 
@@ -26,7 +25,7 @@ jobs:
         with:
           terraform_version: 1.9.5
 
-      - name: Terraform fmt
+      - name: Terraform fmt (check)
         working-directory: terraform
         run: terraform fmt -check -diff
 
@@ -38,8 +37,8 @@ jobs:
         working-directory: terraform
         run: terraform validate
 
-      - name: Terraform plan
-        if: github.event_name != 'push'
+      - name: Terraform plan (PR)
+        if: github.event_name == 'pull_request'
         working-directory: terraform
         env:
           TF_VAR_kubeconfig: ${{ secrets.KUBE_CONFIG }}
@@ -53,7 +52,6 @@ jobs:
           name: tfplan
           path: terraform/tfplan
 
-      # Apply somente na main
       - name: Terraform apply (main)
         if: github.event_name == 'push'
         working-directory: terraform

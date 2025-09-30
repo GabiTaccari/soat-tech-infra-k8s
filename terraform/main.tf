@@ -8,20 +8,18 @@ terraform {
   }
 }
 
-variable "kubeconfig" {
-  type      = string
-  sensitive = true
-}
-
+# Provider Kubernetes usando kubeconfig inline (virá de secret do Actions)
 provider "kubernetes" {
   host                   = null
   config_path            = null
   config_paths           = null
   config_context_cluster = null
+
   experiments {
     manifest_resource = true
   }
-  # Usa KUBECONFIG inline
+
+  # kubeconfig cru (YAML) injetado via TF_VAR_kubeconfig no workflow
   config_raw = var.kubeconfig
 }
 
@@ -40,18 +38,22 @@ resource "kubernetes_deployment_v1" "app" {
 
   spec {
     replicas = 2
+
     selector {
       match_labels = {
         app = "soat-tech"
       }
     }
+
     template {
       metadata {
         labels = {
           app = "soat-tech"
         }
       }
+
       spec {
+        # Puxe imagem privada do GHCR (secret criado no cluster)
         image_pull_secrets {
           name = "ghcr-secret"
         }
@@ -106,15 +108,18 @@ resource "kubernetes_service_v1" "svc" {
       app = "soat-tech"
     }
   }
+
   spec {
     selector = {
       app = "soat-tech"
     }
+
     port {
       port        = 80
       target_port = 3000
       protocol    = "TCP"
     }
+
     type = "ClusterIP"
   }
 }
