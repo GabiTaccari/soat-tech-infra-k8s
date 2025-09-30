@@ -25,7 +25,6 @@ jobs:
         with:
           terraform_version: 1.9.5
 
-      # grava o kubeconfig vindo do secret no caminho padrão
       - name: Setup kubeconfig
         run: |
           mkdir -p ~/.kube
@@ -43,23 +42,14 @@ jobs:
         working-directory: terraform
         run: terraform validate
 
-      - name: Terraform plan (PR)
-        if: github.event_name == 'pull_request'
+      - name: Terraform plan
         working-directory: terraform
         env:
           TF_VAR_image: ${{ vars.APP_IMAGE }}
         run: terraform plan -input=false -out=tfplan
 
-      - name: Upload plan (PR)
-        if: github.event_name == 'pull_request'
+      - name: Upload plan
         uses: actions/upload-artifact@v4
         with:
           name: tfplan
           path: terraform/tfplan
-
-      - name: Terraform apply (main)
-        if: github.event_name == 'push'
-        working-directory: terraform
-        env:
-          TF_VAR_image: ${{ vars.APP_IMAGE }}
-        run: terraform apply -input=false -auto-approve
